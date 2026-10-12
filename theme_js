@@ -1,0 +1,54 @@
+// theme.js - Pengatur Mode Terang / Gelap (Light / Dark Mode)
+(function () {
+  const THEME_KEY = 'portfolio_theme';
+
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark-theme');
+    } else {
+      document.documentElement.classList.remove('dark-theme');
+    }
+    updateToggleButtons(theme);
+  }
+
+  function updateToggleButtons(theme) {
+    const buttons = document.querySelectorAll('.theme-toggle-btn');
+    buttons.forEach((btn) => {
+      const icon = btn.querySelector('.theme-icon');
+      const text = btn.querySelector('.theme-text');
+      if (theme === 'dark') {
+        if (icon) icon.textContent = '☀️';
+        if (text) text.textContent = 'Light';
+        btn.setAttribute('aria-label', 'Beralih ke tema terang');
+        btn.setAttribute('title', 'Beralih ke tema terang');
+      } else {
+        if (icon) icon.textContent = '🌙';
+        if (text) text.textContent = 'Dark';
+        btn.setAttribute('aria-label', 'Beralih ke tema gelap');
+        btn.setAttribute('title', 'Beralih ke tema gelap');
+      }
+    });
+  }
+
+  // Ambil preferensi dari localStorage atau sistem operasi
+  const savedTheme = localStorage.getItem(THEME_KEY);
+  const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const initialTheme = savedTheme ? savedTheme : (systemPrefersDark ? 'dark' : 'light');
+
+  // Terapkan segera saat script dimuat
+  applyTheme(initialTheme);
+
+  document.addEventListener('DOMContentLoaded', () => {
+    applyTheme(document.documentElement.classList.contains('dark-theme') ? 'dark' : 'light');
+
+    const toggleButtons = document.querySelectorAll('.theme-toggle-btn');
+    toggleButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.contains('dark-theme');
+        const nextTheme = isDark ? 'light' : 'dark';
+        applyTheme(nextTheme);
+        localStorage.setItem(THEME_KEY, nextTheme);
+      });
+    });
+  });
+})();
