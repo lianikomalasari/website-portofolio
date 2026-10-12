@@ -16,7 +16,7 @@
     <nav class="navbar">
       <a href="index.html" class="logo">
         <img src="foto1.jpg" alt="Logo" class="logo-img">
-        <span>Logo/Name Header</span>
+        <span>UTS PemWeb</span>
       </a>
       <div class="nav-right-group">
         <ul class="nav-links">
