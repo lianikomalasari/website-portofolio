@@ -1,0 +1,93 @@
+// form.js - Validasi Formulir Kontak Client-Side
+document.addEventListener('DOMContentLoaded', () => {
+  const contactForm = document.getElementById('contactForm');
+  if (!contactForm) return;
+
+  const nameInput = document.getElementById('userName');
+  const emailInput = document.getElementById('userEmail');
+  const messageInput = document.getElementById('userMessage');
+  const feedbackBox = document.getElementById('formFeedback');
+
+  function showError(input, message) {
+    input.classList.add('input-error');
+    let errorElem = input.nextElementSibling;
+    if (!errorElem || !errorElem.classList.contains('error-text')) {
+      errorElem = document.createElement('span');
+      errorElem.classList.add('error-text');
+      input.parentNode.insertBefore(errorElem, input.nextSibling);
+    }
+    errorElem.textContent = message;
+    errorElem.style.display = 'block';
+  }
+
+  function clearError(input) {
+    input.classList.remove('input-error');
+    const errorElem = input.nextElementSibling;
+    if (errorElem && errorElem.classList.contains('error-text')) {
+      errorElem.textContent = '';
+      errorElem.style.display = 'none';
+    }
+  }
+
+  function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  // Real-time input clearing
+  [nameInput, emailInput, messageInput].forEach((input) => {
+    if (!input) return;
+    input.addEventListener('input', () => {
+      clearError(input);
+      if (feedbackBox) feedbackBox.style.display = 'none';
+    });
+  });
+
+  contactForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    let hasError = false;
+
+    // Validasi Nama
+    if (!nameInput.value.trim()) {
+      showError(nameInput, 'Nama tidak boleh kosong');
+      hasError = true;
+    } else {
+      clearError(nameInput);
+    }
+
+    // Validasi Email
+    if (!emailInput.value.trim()) {
+      showError(emailInput, 'Email tidak boleh kosong');
+      hasError = true;
+    } else if (!isValidEmail(emailInput.value.trim())) {
+      showError(emailInput, 'Format email tidak valid (contoh: nama@domain.com)');
+      hasError = true;
+    } else {
+      clearError(emailInput);
+    }
+
+    // Validasi Pesan
+    if (!messageInput.value.trim()) {
+      showError(messageInput, 'Pesan tidak boleh kosong');
+      hasError = true;
+    } else if (messageInput.value.trim().length < 5) {
+      showError(messageInput, 'Pesan minimal 5 karakter');
+      hasError = true;
+    } else {
+      clearError(messageInput);
+    }
+
+    if (hasError) {
+      return;
+    }
+
+    // Simulasi pengiriman berhasil
+    if (feedbackBox) {
+      feedbackBox.className = 'form-feedback success';
+      feedbackBox.textContent = `Terima kasih ${nameInput.value.trim()}! Pesan Anda telah berhasil dikirim (Simulasi).`;
+      feedbackBox.style.display = 'block';
+    }
+
+    contactForm.reset();
+  });
+});
