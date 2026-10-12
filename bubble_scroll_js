@@ -1,0 +1,207 @@
+// bubble-scroll.js - Mengelola Konten Bubble Terpusat dan Gelembung Melayang
+document.addEventListener('DOMContentLoaded', () => {
+  // 1. Buat elemen Gelembung Visual Melayang (Ambient Floating Bubble)
+  const ambientBubble = document.createElement('div');
+  ambientBubble.className = 'ambient-floating-bubble';
+  ambientBubble.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(ambientBubble);
+
+  // 2. Deteksi Halaman Saat Ini
+  const isHome = document.querySelector('.home-bubble-wrapper') !== null;
+  const isAbout = document.querySelector('.about-bubble-wrapper') !== null;
+
+  // Variabel Kontrol Scroll
+  let currentSlide = 0;
+  let isTransitioning = false;
+  const TRANSITION_DURATION = 800; // ms
+
+  // --- HALAMAN HOME (index.html): Transisi Hero ➔ Member 1 ➔ Member 2 ➔ Member 3 ---
+  if (isHome) {
+    const slides = document.querySelectorAll('.home-bubble-slide');
+    const totalSlides = slides.length;
+    const dots = document.querySelectorAll('.bubble-nav-dot');
+
+    function goToSlide(index) {
+      if (index < 0 || index >= totalSlides || isTransitioning) return;
+      isTransitioning = true;
+      currentSlide = index;
+
+      slides.forEach((slide, i) => {
+        if (i === currentSlide) {
+          slide.classList.add('active');
+          slide.classList.remove('prev', 'next');
+        } else if (i < currentSlide) {
+          slide.classList.remove('active', 'next');
+          slide.classList.add('prev');
+        } else {
+          slide.classList.remove('active', 'prev');
+          slide.classList.add('next');
+        }
+      });
+
+      // Update Navigasi Dots
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === currentSlide);
+      });
+
+      // Posisi dinamis gelembung melayang untuk tiap slide (Hero, Member 1, Member 2, Member 3)
+      const bubblePositions = [
+        'translate(15%, -10%) scale(1)',      // Slide 0: Hero
+        'translate(-32%, 28%) scale(1.15)',   // Slide 1: Member 1
+        'translate(28%, 32%) scale(1.08)',    // Slide 2: Member 2
+        'translate(-22%, -18%) scale(1.12)'   // Slide 3: Member 3
+      ];
+      ambientBubble.style.transform = bubblePositions[currentSlide] || 'translate(0, 0)';
+
+      setTimeout(() => {
+        isTransitioning = false;
+      }, TRANSITION_DURATION);
+    }
+
+    // Scroll Wheel Event Listener
+    window.addEventListener('wheel', (e) => {
+      // Jika kursor berada di dalam elemen yang sedang scroll internal di layar kecil, izinkan
+      const activeSlide = slides[currentSlide];
+      const scrollable = activeSlide ? activeSlide.querySelector('.bubble-scroll-content') : null;
+      if (scrollable && scrollable.scrollHeight > scrollable.clientHeight) {
+        const atTop = scrollable.scrollTop === 0;
+        const atBottom = scrollable.scrollTop + scrollable.clientHeight >= scrollable.scrollHeight - 3;
+        if (e.deltaY > 0 && !atBottom) return;
+        if (e.deltaY < 0 && !atTop) return;
+      }
+
+      if (Math.abs(e.deltaY) < 20) return;
+      if (e.deltaY > 0) {
+        goToSlide(currentSlide + 1);
+      } else {
+        goToSlide(currentSlide - 1);
+      }
+    }, { passive: true });
+
+    // Touch Swipe Event Listener (Mobile / Layar Sentuh)
+    let touchStartY = 0;
+    window.addEventListener('touchstart', (e) => {
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    window.addEventListener('touchend', (e) => {
+      const touchEndY = e.changedTouches[0].clientY;
+      const diffY = touchStartY - touchEndY;
+      if (Math.abs(diffY) > 40) {
+        if (diffY > 0) {
+          goToSlide(currentSlide + 1);
+        } else {
+          goToSlide(currentSlide - 1);
+        }
+      }
+    }, { passive: true });
+
+    // Dots Click Listener
+    dots.forEach((dot) => {
+      dot.addEventListener('click', () => {
+        const targetIndex = parseInt(dot.getAttribute('data-slide'), 10);
+        goToSlide(targetIndex);
+      });
+    });
+
+    // Inisialisasi awal ke slide 0
+    goToSlide(0);
+  }
+
+  // --- HALAMAN ABOUT (about.html): Transisi Anggota 1 ➔ 2 ➔ 3 saat Discroll ---
+  if (isAbout) {
+    const memberIds = ["1", "2", "3"];
+    let memberIndex = 0;
+
+    // Sinkronkan dengan URL atau default
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialParam = urlParams.get('member');
+    if (initialParam && memberIds.includes(initialParam)) {
+      memberIndex = memberIds.indexOf(initialParam);
+    }
+
+    function switchMemberWithBubble(newIndex) {
+      if (newIndex < 0 || newIndex >= memberIds.length || isTransitioning) return;
+      isTransitioning = true;
+      memberIndex = newIndex;
+      const memberId = memberIds[memberIndex];
+
+      // Animasi transisi konten bubble
+      const profileContainer = document.querySelector('.profile-bubble-card');
+      if (profileContainer) {
+        profileContainer.classList.add('bubble-fade-out');
+        setTimeout(() => {
+          if (typeof window.loadMemberData === 'function') {
+            window.loadMemberData(memberId);
+          }
+          profileContainer.classList.remove('bubble-fade-out');
+          profileContainer.classList.add('bubble-fade-in');
+          setTimeout(() => {
+            profileContainer.classList.remove('bubble-fade-in');
+          }, 350);
+        }, 200);
+      }
+
+      // Update posisi gelembung melayang
+      const bubblePositions = [
+        'translate(18%, -15%) scale(1)',
+        'translate(-26%, 22%) scale(1.1)',
+        'translate(22%, 28%) scale(0.95)'
+      ];
+      ambientBubble.style.transform = bubblePositions[memberIndex] || 'translate(0, 0)';
+
+      setTimeout(() => {
+        isTransitioning = false;
+      }, 650);
+    }
+
+    window.addEventListener('wheel', (e) => {
+      // Cek apakah konten card profile sedang discroll internal di layar pendek
+      const profileCard = document.querySelector('.profile-bubble-card');
+      if (profileCard && profileCard.scrollHeight > profileCard.clientHeight) {
+        const atTop = profileCard.scrollTop === 0;
+        const atBottom = profileCard.scrollTop + profileCard.clientHeight >= profileCard.scrollHeight - 3;
+        if (e.deltaY > 0 && !atBottom) return;
+        if (e.deltaY < 0 && !atTop) return;
+      }
+
+      if (Math.abs(e.deltaY) < 25) return;
+      if (e.deltaY > 0) {
+        if (memberIndex < memberIds.length - 1) {
+          switchMemberWithBubble(memberIndex + 1);
+        }
+      } else {
+        if (memberIndex > 0) {
+          switchMemberWithBubble(memberIndex - 1);
+        }
+      }
+    }, { passive: true });
+
+    // Touch Swipe untuk About
+    let touchStartYAbout = 0;
+    window.addEventListener('touchstart', (e) => {
+      touchStartYAbout = e.touches[0].clientY;
+    }, { passive: true });
+
+    window.addEventListener('touchend', (e) => {
+      const diffY = touchStartYAbout - e.changedTouches[0].clientY;
+      if (Math.abs(diffY) > 40) {
+        if (diffY > 0 && memberIndex < memberIds.length - 1) {
+          switchMemberWithBubble(memberIndex + 1);
+        } else if (diffY < 0 && memberIndex > 0) {
+          switchMemberWithBubble(memberIndex - 1);
+        }
+      }
+    }, { passive: true });
+  }
+
+  // --- HALAMAN PROJECT & CONTACT: Respon Gelembung Melayang Halus Saat Scroll ---
+  if (!isHome && !isAbout) {
+    let scrollPos = 0;
+    window.addEventListener('wheel', (e) => {
+      scrollPos += e.deltaY * 0.15;
+      const limitedY = Math.max(-50, Math.min(50, scrollPos));
+      ambientBubble.style.transform = `translate(${limitedY * 0.5}px, ${limitedY}px) scale(${1 + Math.abs(limitedY) * 0.002})`;
+    }, { passive: true });
+  }
+});
